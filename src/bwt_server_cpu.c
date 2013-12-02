@@ -527,8 +527,9 @@ int apply_bwt_bs(bwt_server_input_t* input, batch_t *batch) {
       else if (fq_read->sequence[j] == 'G')
         Ng++;
     }
-    Ngc = 1.0 * Ng / (Nc + Ng);
-    Ncg = 1.0 - Ngc;
+    // check if the read has at least one 'C' or 'G', to avoid 0 division
+    Ncg = (Nc + Ng == 0)?(0.5):(1.0 * Nc / (Nc + Ng));
+    Ngc = 1.0 - Ncg;
     mapping_batch->histogram_sw[i] = Ncg;
     LOG_DEBUG_F("========= END OF HISTOGRAM OF %s =========\n", fq_read->sequence);
     LOG_DEBUG_F("========= VALUES Ncg %f =========\n", Ncg);

@@ -1670,82 +1670,67 @@ int apply_caling_bs(cal_seeker_input_t* input, batch_t *batch) {
   pthread_mutex_lock(&mutex_sp);
   TOTAL_READS_SEEDING += num_targets;
   pthread_mutex_unlock(&mutex_sp);
+  
+  float Ncg, Ngc;
+  float margen = mapping_batch->margin;
 
   for (size_t i = 0; i < num_targets; i++) {
     target_index = targets[i];
+
+    Ncg = mapping_batch->histogram_sw[target_index];
+    Ngc = 1 - Ncg;
     
+    //==========================================================================================
     // GA reads
     LOG_DEBUG("searching CALs for GA reads\n");
 
     read = array_list_get(target_index, mapping_batch->GA_rev_fq_batch);
     read2 = array_list_get(target_index, mapping_batch->GA_fq_batch);
-   
-    //printf("From CAL Seeker %s\n", read->id);
     list = mapping_batch->mapping_lists[target_index];
 
-    //    if (array_list_get_flag(list) == DOUBLE_ANCHORS) {
-    //      printf("******************************* double anchors\n");
-    //    } else {
-    //printf("---------------------------> SEEDING 1\nindex1 %s\tindex2 %s\n", bwt_index->nucleotides, bwt_index2->nucleotides);
-
-      max_seeds = (read->length / 15) * 2 + 10;      
-      num_cals = bwt_generate_cals_bs(read->sequence, read2->sequence, seed_size, 
+    //if (array_list_get_flag(list) == DOUBLE_ANCHORS) {
+    //} else {
+    if (Ngc <= margen) {
+      max_seeds = (read->length / 15) * 2 + 10;
+      num_cals = bwt_generate_cals_bs(read->sequence, read2->sequence, seed_size,
 				      bwt_optarg, bwt_index2, bwt_index, list);
-      //    }
-    
-    for (int c = 0; c < array_list_size(list); c++) {
-      //cal_print(array_list_get(c, list));
+      // filter CALs
+      list = filter_cals(num_cals, read->length, list);
+      // and update targets
+      mapping_batch->mapping_lists[target_index] = list;
+      if (array_list_size(list) > 0) {
+	mapping_batch->targets[target_pos++] = target_index;
+      }
+    } else {
+      array_list_clear(list, (void *) NULL);
     }
-
-    // filter CALs
-    list = filter_cals(num_cals, read->length, list);
-
-    for (int c = 0; c < array_list_size(list); c++) {
-      //cal_print(array_list_get(c, list));
-    }
-
-
-    // and update targets
-    mapping_batch->mapping_lists[target_index] = list;
-    if (array_list_size(list) > 0) {
-      mapping_batch->targets[target_pos++] = target_index;
-    }
-
-
+    //}
+    //==========================================================================================
     // CT reads
     LOG_DEBUG("searching CALs for CT reads\n");
 
     read = array_list_get(target_index, mapping_batch->CT_rev_fq_batch);
     read2 = array_list_get(target_index, mapping_batch->CT_fq_batch);
-   
-    //printf("From CAL Seeker %s\n", read->id);
     list = mapping_batch->mapping_lists2[target_index];
 
-    //printf("---------------------------> SEEDING 2\n");
-    
-    //    if (array_list_get_flag(list) == DOUBLE_ANCHORS) {
-    //    } else {
-      max_seeds = (read->length / 15) * 2 + 10;      
-      num_cals = bwt_generate_cals_bs(read->sequence, read2->sequence, seed_size, 
+    //if (array_list_get_flag(list) == DOUBLE_ANCHORS) {
+    //} else {
+    if (Ncg <= margen) {
+      max_seeds = (read->length / 15) * 2 + 10;
+      num_cals = bwt_generate_cals_bs(read->sequence, read2->sequence, seed_size,
 				      bwt_optarg, bwt_index, bwt_index2, list);
-      //    }
-    
-    for (int c = 0; c < array_list_size(list); c++) {
-      //cal_print(array_list_get(c, list));
+      // filter CALs
+      list = filter_cals(num_cals, read->length, list);
+      // and update targets
+      mapping_batch->mapping_lists2[target_index] = list;
+      if (array_list_size(list) > 0) {
+	mapping_batch->targets2[target_pos2++] = target_index;
+      }
+    } else {
+      array_list_clear(list, (void *) NULL);
     }
-
-    // filter CALs
-    list = filter_cals(num_cals, read->length, list);
-
-    for (int c = 0; c < array_list_size(list); c++) {
-      //cal_print(array_list_get(c, list));
-    }
-
-    // and update targets
-    mapping_batch->mapping_lists2[target_index] = list;
-    if (array_list_size(list) > 0) {
-      mapping_batch->targets2[target_pos2++] = target_index;
-    }
+    //}
+    //==========================================================================================
   } // end of main loop (targets)
 
   // updating number of targets for the next stage

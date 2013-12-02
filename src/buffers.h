@@ -49,7 +49,7 @@
 
 //--------  DEFINE WORKFLOW BS VARS  -----------
 
-#define BS_HIST_MARGIN          0.90
+#define BS_HIST_MARGIN          0.80
 
 #define BS_BWT_STAGE            0
 #define BS_CAL_STAGE            1

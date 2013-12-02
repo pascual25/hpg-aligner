@@ -8,7 +8,7 @@ bin/*
 *kdev*
 .sconsign.dblite
 hpg-aligner*
-launch*
-new_launch*
+*launch*
 *.old
 *.txt
+validate*/bam_trie_test
