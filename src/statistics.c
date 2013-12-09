@@ -147,13 +147,13 @@ void basic_statistics_display(basic_statistics_t *statistics, int rna_mode, floa
   printf("| Total Time (s)    : %-65.2f", load_time + alig_time);
   printf("|\n");
   printf("========================================================================================\n");
-  printf("| Total Reads Processed: %-62llu", total_reads);
+  printf("| Total Reads Processed: %-62lu", total_reads);
   printf("|\n");
   printf("+-------------------------------------------+------------------------------------------+\n");
-  printf("| Reads Mapped: %-18llu  %6.2f", num_mapped_reads, num_mapped_reads * 100.0 / total_reads);
-  printf("% | ");
-  printf(" Reads Unmapped: %-14llu  %6.2f", total_reads - num_mapped_reads, (total_reads - num_mapped_reads) * 100.0 / total_reads);
-  printf("%  |\n");
+  printf("| Reads Mapped: %-18lu  %6.2f", num_mapped_reads, num_mapped_reads * 100.0 / total_reads);
+  printf("\% | ");
+  printf(" Reads Unmapped: %-14lu  %6.2f", total_reads - num_mapped_reads, (total_reads - num_mapped_reads) * 100.0 / total_reads);
+  printf("\%  |\n");
   if (rna_mode) {
     /*  printf("========================================================================================\n");
     printf("| Total Splice Junctions: %-61llu", total_sp);

@@ -725,26 +725,221 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
   //intialize the new mappings and indices
   //printf("Init new variables - mappings\n");
   mapping_batch->mapping_lists2 = (array_list_t **) calloc(num_reads, sizeof(array_list_t*));
-
- for (size_t i = 0; i < num_reads; i++) {
+  
+  for (size_t i = 0; i < num_reads; i++) {
     mapping_batch->mapping_lists2[i] = array_list_new(500,
-                                                     1.25f,
-                                                     COLLECTION_MODE_ASYNCHRONIZED);
+						      1.25f,
+						      COLLECTION_MODE_ASYNCHRONIZED);
   }
-
+  
   //printf("Init new variables - reads transformations\n");
   mapping_batch->CT_fq_batch     = array_list_new(num_reads + 2, 1.25f, COLLECTION_MODE_ASYNCHRONIZED);
   mapping_batch->CT_rev_fq_batch = array_list_new(num_reads + 2, 1.25f, COLLECTION_MODE_ASYNCHRONIZED);
   mapping_batch->GA_fq_batch     = array_list_new(num_reads + 2, 1.25f, COLLECTION_MODE_ASYNCHRONIZED);
   mapping_batch->GA_rev_fq_batch = array_list_new(num_reads + 2, 1.25f, COLLECTION_MODE_ASYNCHRONIZED);
-
+  
   // copy and transform the reads simultaneously
   cpy_transform_array_bs(mapping_batch->fq_batch, 
-                        mapping_batch->CT_fq_batch, mapping_batch->CT_rev_fq_batch, 
-                        mapping_batch->GA_fq_batch, mapping_batch->GA_rev_fq_batch);
+			 mapping_batch->CT_fq_batch, mapping_batch->CT_rev_fq_batch, 
+			 mapping_batch->GA_fq_batch, mapping_batch->GA_rev_fq_batch);
+  
+  /*
+  // mostrar las reads
+  {
+    fastq_read_t* fq_read_src;
 
+    for (size_t i = 0; i < num_reads; i++) {
+    //for (size_t i = 0; i < 1; i++) {
+      printf("\n %lu reads\n", num_reads);
+      fq_read_src  = (fastq_read_t *) array_list_get(i, mapping_batch->fq_batch);
+      printf("Id = %lu\tOrig:   %s\n", i, fq_read_src->sequence);
+      fq_read_src  = (fastq_read_t *) array_list_get(i, mapping_batch->CT_fq_batch);
+      printf("Id = %lu\tCT:     %s\n", i, fq_read_src->sequence);
+      fq_read_src  = (fastq_read_t *) array_list_get(i, mapping_batch->CT_rev_fq_batch);
+      printf("Id = %lu\tCT_rev: %s\n", i, fq_read_src->sequence);
+      fq_read_src  = (fastq_read_t *) array_list_get(i, mapping_batch->GA_fq_batch);
+      printf("Id = %lu\tGA:     %s\n", i, fq_read_src->sequence);
+      fq_read_src  = (fastq_read_t *) array_list_get(i, mapping_batch->GA_rev_fq_batch);
+      printf("Id = %lu\tGA_rev: %s\n", i, fq_read_src->sequence);
+    }
+  }
+  //exit(0);
+  */
+// make the four searches
+  alignment_t *alignment;
+  size_t header_len;
+
+  size_t num_threads = input->bwt_optarg_p->num_threads;
+  num_reads = array_list_size(mapping_batch->fq_batch);
+  size_t chunk = MAX(1, num_reads/(num_threads*10));
+  fastq_read_t* fq_read;
+  mapping_batch->num_targets = 0;
+
+  size_t Nc, Ng;
+  float Ncg, Ngc;
+  float margen = mapping_batch->margin;
+
+  for (size_t i = 0; i < num_reads; i++) {
+    // obtain histogram of each read to filter the number of searches realized
+    //---------------------------------
+    LOG_DEBUG_F("========= OBTAIN HISTOGRAM OF READ %lu =========\n", i);
+    fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->fq_batch);
+    Nc = 0;
+    Ng = 0;
+    for (size_t j = 0; j < fq_read->length; j++){
+      if (fq_read->sequence[j] == 'C')
+        Nc++;
+      else if (fq_read->sequence[j] == 'G')
+        Ng++;
+    }
+    // check if the read has at least one 'C' or 'G', to avoid 0 division
+    Ncg = (Nc + Ng == 0)?(0.5):(1.0 * Nc / (Nc + Ng));
+    Ngc = 1.0 - Ncg;
+    mapping_batch->histogram_sw[i] = Ncg;
+    LOG_DEBUG_F("========= END OF HISTOGRAM OF READ %lu OF %lu [ %s ] =========\n", i, num_reads, fq_read->sequence);
+    LOG_DEBUG_F("========= VALUES Ncg  %4.2f =========\n", Ncg);
+    LOG_DEBUG_F("========= VALUES Ngc  %4.2f =========\n", Ngc);
+    LOG_DEBUG_F("========= VALUE STORE %4.2f =========\n", mapping_batch->histogram_sw[i]);
+    //---------------------------------
+
+    array_list_set_flag(BS_ANCHORS, mapping_batch->mapping_lists[i]);
+    array_list_set_flag(BS_ANCHORS, mapping_batch->mapping_lists2[i]);
+
+    //if (Ngc <= margen) {
+    // first search the reverse of the G->A transformation
+    fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->GA_rev_fq_batch);
+    bwt_map_inexact_read_bs_un(fq_read,
+			       input->bwt_optarg_p, input->bwt_index2_p,
+			       mapping_batch->mapping_lists[i], 1);
+    printf("END Search 1! with flag %i | items %lu\n",
+	   mapping_batch->mapping_lists[i]->flag, mapping_batch->mapping_lists[i]->size);
+    //---------------------------------
+    array_list_clear(mapping_batch->mapping_lists[i], (void *) NULL);
+    //---------------------------------
+/*    
+    if (array_list_get_flag(mapping_batch->mapping_lists[i]) != BS_EXCEEDED) {
+      // next search the direct of the G->A transformation
+      fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->GA_fq_batch);      
+      //array_list_set_flag(array_list_get_flag(items_list2), items_list1);
+      //printf("Search 2\n");
+      bwt_map_inexact_read_bs(fq_read,
+			      input->bwt_optarg_p, input->bwt_index_p,
+			      mapping_batch->mapping_lists[i], 0);
+      //printf("END Search 2! with flag %i | items %i\n", mapping_batch->mapping_lists[i]->flag,
+      //     mapping_batch->mapping_lists[i]->size);
+    }
+    //}
+  
+    if (Ncg <= margen) {
+      // first search the reverse of the C->T transformation
+      fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->CT_rev_fq_batch);
+      //printf("Search 3\n");
+      bwt_map_inexact_read_bs(fq_read,
+			      input->bwt_optarg_p, input->bwt_index_p,
+			      mapping_batch->mapping_lists2[i], 1);
+      //printf("Search 3 end! with flag %i | items %i\n", mapping_batch->mapping_lists2[i]->flag, 
+      //	   mapping_batch->mapping_lists2[i]->size);
+      
+      if (array_list_get_flag(mapping_batch->mapping_lists2[i]) != BS_EXCEEDED) {
+	// next search the direct of the C->T transformation
+	fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->CT_fq_batch);
+	//printf("Search 4\n");
+	bwt_map_inexact_read_bs(fq_read,
+				input->bwt_optarg_p, input->bwt_index2_p,
+				mapping_batch->mapping_lists2[i], 0);
+	//printf("Search 4 end! with flag %i | items %i\n", mapping_batch->mapping_lists2[i]->flag,
+	//     mapping_batch->mapping_lists2[i]->size);
+      }
+    }
+
+    //printf("NUM ITEMS LIST   = %i\n", mapping_batch->mapping_lists[i]->size);
+    //printf("NUM ITEMS LIST 2 = %i\n", mapping_batch->mapping_lists2[i]->size);
+    //Flag 0 --> Read mapped!
+    //Flag 1 --> Read with anchors!
+    //Flag 2 --> Read with mappings exceded!
+
+    //printf("++++++++++++READ %2lu %s\n", i, fq_read->id);
+    //printf("------------NUM ITEMS LIST   = %i\n", mapping_batch->mapping_lists[i]->size);
+    //printf("------------     FLAG LIST   = %i\n", array_list_get_flag(mapping_batch->mapping_lists[i]));
+    //printf("------------NUM ITEMS LIST 2 = %i\n", mapping_batch->mapping_lists2[i]->size);
+    //printf("------------     FLAG LIST 2 = %i\n", array_list_get_flag(mapping_batch->mapping_lists2[i]));
+
+    if ((array_list_get_flag(mapping_batch->mapping_lists[i])  == BS_ALIGNMENTS && 
+	 mapping_batch->mapping_lists[i]->size) || 
+	(array_list_get_flag(mapping_batch->mapping_lists2[i]) == BS_ALIGNMENTS && 
+	 mapping_batch->mapping_lists2[i]->size)) {
+
+      if(array_list_get_flag(mapping_batch->mapping_lists[i]) == BS_ANCHORS) {
+	array_list_clear( mapping_batch->mapping_lists[i], (void *)bwt_anchor_free);
+      } else if(array_list_get_flag(mapping_batch->mapping_lists2[i]) == BS_ANCHORS) {
+	array_list_clear(mapping_batch->mapping_lists2[i], (void *)bwt_anchor_free);
+      }
+      array_list_set_flag(BS_ALIGNMENTS, mapping_batch->mapping_lists[i]);
+      array_list_set_flag(BS_ALIGNMENTS, mapping_batch->mapping_lists2[i]);
+    } else {
+      //imprimir (o guardar) las reads no mapeadas exactas (para depuración)
+      if (array_list_get_flag(mapping_batch->mapping_lists[i])  != BS_EXCEEDED && 
+	  array_list_get_flag(mapping_batch->mapping_lists2[i]) != BS_EXCEEDED) {
+	//if (mapping_batch->mapping_lists[i]->size) {
+	//  bwt_search_pair_anchors(mapping_batch->mapping_lists[i], fq_read->length);	
+	//}
+	//if (!mapping_batch->mapping_lists[i]->size) {
+	//  array_list_set_flag(NOT_ANCHORS, mapping_batch->mapping_lists[i]);	  
+	//}
+
+	//if(mapping_batch->mapping_lists2[i]->size) {
+	//  bwt_search_pair_anchors(mapping_batch->mapping_lists2[i], fq_read->length);	
+	//}
+	//if (!mapping_batch->mapping_lists2[i]->size) {
+	//  array_list_set_flag(NOT_ANCHORS, mapping_batch->mapping_lists2[i]);	  
+	//}
+	mapping_batch->targets[(mapping_batch->num_targets)++] = i;
+
+	//array_list_set_flag(1, mapping_batch->mapping_lists2[i]);
+	//fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->fq_batch);
+	//printf("+read %lu not mapped\nid  %s\n%seq s\n\n", i, fq_read->id, fq_read->sequence);
+      } else {
+	// at least one of the mappings found exceeded alignments
+	array_list_clear(mapping_batch->mapping_lists[i], NULL);
+	array_list_clear(mapping_batch->mapping_lists2[i], NULL);
+	array_list_set_flag(BS_EXCEEDED, mapping_batch->mapping_lists[i]);
+	array_list_set_flag(BS_EXCEEDED, mapping_batch->mapping_lists2[i]);
+      }
+    }
+
+*/
+    /*
+    printf("............READ %2lu %s\n", i, fq_read->id);
+    printf("------------NUM ITEMS LIST   = %i\n", mapping_batch->mapping_lists[i]->size);
+    printf("------------     FLAG LIST   = %i\n", array_list_get_flag(mapping_batch->mapping_lists[i]));
+    printf("------------NUM ITEMS LIST 2 = %i\n", mapping_batch->mapping_lists2[i]->size);
+    printf("------------     FLAG LIST 2 = %i\n\n", array_list_get_flag(mapping_batch->mapping_lists2[i]));
+    printf("FLAGS:\nAlignments found %i\nNot anchors %i\nSingle Anchors %i\nDouble Anchors %i\nAlignments ecceeded %i\n",
+	   ALIGNMENTS_FOUND,NOT_ANCHORS,SINGLE_ANCHORS,DOUBLE_ANCHORS,ALIGNMENTS_EXCEEDED);
+    */
+  }// end for(reads)
+
+  size_t num_mapped_reads = array_list_size(mapping_batch->fq_batch) - mapping_batch->num_targets;
+  mapping_batch->num_to_do = num_mapped_reads;
+
+  if (time_on) { stop_timer(start, end, time); timing_add(time, BWT_SERVER, timing); }
+  
   LOG_DEBUG("========= END OF APPLY BWT BS UNIFIED =========\n");
-  return BS_UN_SW_STAGE;
+  if (batch->mapping_batch->num_targets > 0 || batch->mapping_batch->num_targets2 > 0 ) {
+    //printf("We have targets\n");
+    // esto vale?????
+    //---------------------------------------------------------
+    /*
+    for (int i = 0; i < batch->mapping_batch->num_targets; i++) {
+      batch->mapping_batch->bwt_mappings[batch->mapping_batch->targets[i]] = 1;
+    }
+    */
+    //---------------------------------------------------------
+    return BS_UN_SW_STAGE;
+  }
+
+  //printf("Reads are mapped\n");
+  return BS_UN_POST_PAIR_STAGE;
 }
 
 //------------------------------------------------------------------------------------

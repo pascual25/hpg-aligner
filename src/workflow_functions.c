@@ -650,7 +650,7 @@ void write_unmapped_read(fastq_read_t *fq_read, bam_file_t *bam_file) {
   bam1_t *bam1;
 
   // calculating cigar
-  sprintf(aux, "%luX", fq_read->length);
+  sprintf(aux, "%iX", fq_read->length);
   alig = alignment_new();
   header_len = strlen(fq_read->id);
   id = (char *) malloc(sizeof(char) * (header_len + 1));

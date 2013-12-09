@@ -94,6 +94,12 @@
 #define ALIGNMENTS_EXCEEDED 4
 
 //------------------------------------------------------------------------------------
+/*
+#define BS_ALIGNMENTS       0
+#define BS_ANCHORS          1
+#define BS_EXCEEDED         2
+*/
+//------------------------------------------------------------------------------------
 
 #define DNA_MODE           0
 #define RNA_MODE           1
