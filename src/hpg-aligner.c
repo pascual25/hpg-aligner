@@ -307,9 +307,6 @@ int main(int argc, char* argv[]) {
 		   bwt_optarg, cal_optarg, pair_mng, report_optarg, options);
   } else if (!strcmp(command, "bs-un")) {
     // BS-UNIFIED version
-    printf("\n*****************************\n");
-    printf("\tNew line of execution\n");
-    printf("*****************************\n\n");
     run_bs_unified_aligner(genome1, genome2, genome, bwt_index1, bwt_index2,
 			   bwt_optarg, cal_optarg, pair_mng, report_optarg, options);
   }
@@ -321,15 +318,14 @@ int main(int argc, char* argv[]) {
   
   if (strcmp(command, "bs" ) != 0 && strcmp(command, "bs-un" ) != 0) {
     bwt_index_free(bwt_index);
-    genome_free(genome);
   } else {
-    genome_free(genome);
     bwt_index_free(bwt_index1);
     genome_free(genome1);
     bwt_index_free(bwt_index2);
     genome_free(genome2);
   }
 
+  genome_free(genome);
   bwt_optarg_free(bwt_optarg);
   cal_optarg_free(cal_optarg);
   pair_mng_free(pair_mng);
