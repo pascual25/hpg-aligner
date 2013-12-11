@@ -69,6 +69,9 @@ size_t tot_reads_out = 0;
 FILE *fd_log;
 size_t junction_id;
 
+float min_score = 300.0, tot_score;
+size_t tot_rep;
+
 /*
 pthread_mutex_t sw_mutex;
 size_t *histogram_sw;
@@ -152,7 +155,8 @@ int main(int argc, char* argv[]) {
   if (!strcmp(command, "build-index")) {
     if (options->bs_index == 0) { 
       //printf("Regular index generation\n");
-      run_index_builder(options->genome_filename, options->bwt_dirname, options->index_ratio);
+      run_index_builder(options->genome_filename, options->bwt_dirname, 
+			options->index_ratio, false, "ACGT");
       LOG_DEBUG("Done !!\n");
       exit(0);
     }
@@ -168,7 +172,8 @@ int main(int argc, char* argv[]) {
        * 										*
        * ***************************************************************************	*/
 
-      run_index_builder(options->genome_filename, options->bwt_dirname, options->index_ratio);
+      run_index_builder(options->genome_filename, options->bwt_dirname, options->index_ratio, false, "ACGT");
+
       // generate binary code for original genome
       char binary_filename[strlen(options->bwt_dirname) + 128];
       //sprintf(binary_filename, "%s/dna_compression.bin", options->bwt_dirname);
@@ -187,7 +192,7 @@ int main(int argc, char* argv[]) {
       sprintf(gen1, "sed 's/C/T/g' %s > %s",options->genome_filename, genome_1);
       system(gen1);
 
-      run_index_builder_bs(genome_1, bs_dir1, options->index_ratio, "AGT");
+      run_index_builder(genome_1, bs_dir1, options->index_ratio, false, "AGT");
       LOG_DEBUG("AGT index Done !!\n");
 
       LOG_DEBUG("Generation of ACT index\n");
@@ -203,7 +208,7 @@ int main(int argc, char* argv[]) {
       sprintf(gen2, "sed 's/G/A/g' %s > %s",options->genome_filename, genome_2);
       system(gen2);
 
-      run_index_builder_bs(genome_2, bs_dir2, options->index_ratio, "ACT");
+      run_index_builder(genome_2, bs_dir2, options->index_ratio, false, "ACT");
       LOG_DEBUG("ACT index Done !!\n");
       
       LOG_DEBUG("Generation of CT & GA context\n");
@@ -238,8 +243,12 @@ int main(int argc, char* argv[]) {
 
     // BWT index
     LOG_DEBUG("Reading bwt index...");
-    
-    bwt_index = bwt_index_new(options->bwt_dirname);
+
+    //if (time_on) { timing_start(INIT_BWT_INDEX, 0, timing_p); }
+    //bwt_index_t *bwt_index = bwt_index_new(options->bwt_dirname);    
+    bwt_index = bwt_index_new(options->bwt_dirname, false);
+    //bwt_index_new(options->bwt_dirname);
+
     LOG_DEBUG("Reading bwt index done !!");
   } else {
     // change the filter_*_mappings values for bisulfite alignments
@@ -264,13 +273,30 @@ int main(int argc, char* argv[]) {
     
     // BWT index
     LOG_DEBUG("Loading AGT index...");
-    bwt_index1 = bwt_index_new(bs_dir1);
+
+    bwt_index1 = bwt_index_new(bs_dir1, false);
+    //printf("Load index1 done\n");
+    /*
+    printf("+++bwt_index1 -> %s\n" ,bwt_index1->nucleotides);
+    bwt_index1->nucleotides = strdup(readNucleotide(bs_dir1, "Nucleotide"));
+    bwt_init_replace_table(bwt_index1->nucleotides, bwt_index1->table, bwt_index1->rev_table);
+    printf("***bwt_index1 -> %s\n" ,bwt_index1->nucleotides);
+    */
     LOG_DEBUG("Loading AGT index done !!");
 
     LOG_DEBUG("Loading ACT index...");
-    bwt_index2 = bwt_index_new(bs_dir2);
+    bwt_index2 = bwt_index_new(bs_dir2, false);
+    //printf("Load index2 done\n");
+    /*
+    printf("+++bwt_index2 -> %s\n", bwt_index2->nucleotides);
+    bwt_index2->nucleotides = strdup(readNucleotide(bs_dir2, "Nucleotide"));
+    bwt_init_replace_table(bwt_index2->nucleotides, bwt_index2->table, bwt_index2->rev_table);
+    printf("***bwt_index2 -> %s\n", bwt_index2->nucleotides);
+    */
     LOG_DEBUG("Loading ACT index done !!");
+    //exit(-1);
   }
+
   stop_timer(time_genome_s, time_genome_e, time_genome);
 
   //BWT parameters
@@ -279,10 +305,16 @@ int main(int argc, char* argv[]) {
 					    options->filter_seed_mappings);
   
   // CAL parameters
-  cal_optarg_t *cal_optarg = cal_optarg_new(options->min_cal_size, options->seeds_max_distance, 
-					    options->num_seeds, options->min_num_seeds_in_cal,
-					    options->seed_size, options->min_seed_size, 
-					    options->cal_seeker_errors);
+  //printf("%i\n", options->min_cal_size);
+  cal_optarg_t *cal_optarg = cal_optarg_new(options->min_cal_size, 
+					    options->seeds_max_distance, 
+					    options->num_seeds, 
+					    options->min_num_seeds_in_cal,
+					    options->seed_size, 
+					    options->min_seed_size, 
+					    options->cal_seeker_errors, 
+					    options->max_intron_length, 
+					    options->min_intron_length);
   
   // paired mode parameters
   pair_mng_t *pair_mng = pair_mng_new(options->pair_mode, options->pair_min_distance, 
@@ -339,7 +371,9 @@ int main(int argc, char* argv[]) {
     //timing_display(timing);
   }
 
+
   basic_statistics_display(basic_st, !strcmp(command, "rna"), time_alig / 1000000, time_genome / 1000000);
+
 
   if (!strcmp(command, "rna") && fd_log != NULL) {
     char str_log[2048];
@@ -366,6 +400,9 @@ int main(int argc, char* argv[]) {
     fwrite(str_log, sizeof(char), strlen(str_log), fd_log);
 
     sprintf(str_log, "TIME ALIGNER: %0.2f (s)\n\0", time_alig / 1000000);
+    fwrite(str_log, sizeof(char), strlen(str_log), fd_log);
+
+    sprintf(str_log, "TOTAL TIME: %0.2f (s)\n\0", (time_alig + time_genome) / 1000000);
     fwrite(str_log, sizeof(char), strlen(str_log), fd_log);
 
     fclose(fd_log);

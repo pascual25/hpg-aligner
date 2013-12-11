@@ -76,7 +76,7 @@ void run_bs_aligner(genome_t *genome2, genome_t *genome1, genome_t *genome,
   
   region_seeker_input_t region_input;
   region_seeker_input_init(NULL, cal_optarg, bwt_optarg, 
-			   bwt_index1, NULL, 0, options->gpu_process, 0, 0, 
+			   bwt_index1, NULL, 0, 0, 0, 0, 
 			   genome, NULL, &region_input);
   region_input.bwt_index2_p = bwt_index2;
   
@@ -124,7 +124,7 @@ void run_bs_aligner(genome_t *genome2, genome_t *genome1, genome_t *genome,
   workflow_stage_function_t stage_functions[] = {bwt_stage_bs, cal_stage_bs, 
 						 pre_pair_stage, sw_stage_bs, post_pair_stage_bs};
   char *stage_labels[] = {"BWT", "CAL", "PRE PAIR", "SW", "POST PAIR"};
-  workflow_set_stages(5, &stage_functions, stage_labels, wf);
+  workflow_set_stages(5, stage_functions, stage_labels, wf);
 
   // workflow definition for the analysis with the postprocess
   /*  
@@ -138,13 +138,14 @@ void run_bs_aligner(genome_t *genome2, genome_t *genome1, genome_t *genome,
   workflow_set_consumer(bs_writer, "BAM BS writer", wf);
   
   //if (time_on) {
-  start_timer(start);
-  //}
+  extern double time_alig;
+  extern struct timeval time_start_alig, time_end_alig;
   
-  workflow_run_with(options->num_cpu_threads, wf_input, wf);
-  
-  //if (time_on) {
-  stop_timer(start, end, main_time);
+  start_timer(time_start_alig);
+  workflow_run_with(options->num_cpu_threads, wf_input, wf);  
+  stop_timer(time_start_alig, time_end_alig, time_alig);
+
+
   //printf("Total Time: %4.04f sec\n", time / 1000000);
   //}
   

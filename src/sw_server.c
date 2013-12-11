@@ -43,7 +43,7 @@ void sw_optarg_init(float gap_open, float gap_extend,
 
 void sw_server_input_init(list_t* sw_list, list_t* alignment_list, unsigned int write_size, 
 			  float match, float mismatch, float gap_open, float gap_extend, 
-			  float min_score, unsigned int flank_length, genome_t* genome, 
+			  int min_score, unsigned int flank_length, genome_t* genome, 
 			  size_t max_intron_size, int min_intron_size, 
 			  size_t seed_max_distance, bwt_optarg_t* bwt_optarg_p, 
 			  avls_list_t *avls_list,
@@ -205,7 +205,7 @@ int apply_sw(sw_server_input_t* input, batch_t *batch) {
   cigar_code_t *cigar_code;
   cigar_op_t *first_op;
 
-  float score, norm_score, min_score = input->min_score;
+  int score, min_score = input->min_score;
 
   alignment_t *alignment;
   array_list_t *alignment_list;
@@ -236,12 +236,12 @@ int apply_sw(sw_server_input_t* input, batch_t *batch) {
       s = (seed_region_t *) linked_list_get_first(cal->sr_list);
       cigar_code = (cigar_code_t *) s->info;
 
-      norm_score = cigar_code_get_score(read_len, cigar_code);
-      score = norm_score * 100; //read_len;
-      LOG_DEBUG_F("score = %0.2f\n", norm_score);
+      score = cigar_code_score(read_len, cigar_code);
+      //score = norm_score * 100; //read_len;
+      LOG_DEBUG_F("score = %d\n", score);
 
       // filter by SW score
-      if (norm_score > min_score) {
+      if (score > min_score) {
 
 	// update cigar and sequence and quality strings
 	cigar_code_update(cigar_code);
@@ -264,7 +264,7 @@ int apply_sw(sw_server_input_t* input, batch_t *batch) {
 	optional_fields = (char *) calloc(optional_fields_length, sizeof(char));
       
 	p = optional_fields;
-	AS = (int) norm_score * 100;
+	AS = score;
 	
 	sprintf(p, "ASi");
 	p += 3;
@@ -296,7 +296,7 @@ int apply_sw(sw_server_input_t* input, batch_t *batch) {
 				  cal->strand, cal->chromosome_id - 1, cal->start - 1,
 				  new_cigar_code_string(cigar_code), 
 				  cigar_code_get_num_ops(cigar_code), 
-				  norm_score * 254, 1, (num_cals > 1),
+				  255, 1, (num_cals > 1),
 				  optional_fields_length, optional_fields, alignment);
 
 	array_list_insert(alignment, alignment_list);
@@ -853,7 +853,8 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
   cigar_code_t *cigar_code;
   cigar_op_t *first_op;
 
-  float score, norm_score, min_score = input->min_score;
+  //float norm_score;
+  int score, min_score = input->min_score;
 
   alignment_t *alignment;
   array_list_t *alignment_list;
@@ -899,13 +900,13 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
 	
 	s = (seed_region_t *) linked_list_get_first(cal->sr_list);
 	cigar_code = (cigar_code_t *) s->info;
-	
-	norm_score = cigar_code_get_score(read_len, cigar_code);
-	score = norm_score * 100; //read_len;
-	LOG_DEBUG_F("score = %0.2f\n", norm_score);
+		
+	score = cigar_code_score(read_len, cigar_code);
+
+	LOG_DEBUG_F("score = %d\n", score);
 
 	// filter by SW score
-	if (norm_score > min_score) {
+	if (score > min_score) {
 
 	  // update cigar and sequence and quality strings
 	  cigar_code_update(cigar_code);
@@ -928,7 +929,7 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
 	  optional_fields = (char *) calloc(optional_fields_length, sizeof(char));
 	  
 	  p = optional_fields;
-	  AS = (int) norm_score * 100;
+	  AS = score;
 	
 	  sprintf(p, "ASi");
 	  p += 3;
@@ -960,7 +961,7 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
 				    cal->strand, cal->chromosome_id - 1, cal->start - 1,
 				    strdup(new_cigar_code_string(cigar_code)), 
 				    cigar_code_get_num_ops(cigar_code), 
-				    norm_score * 254, 1, (num_cals > 1),
+				    255, 1, (num_cals > 1),
 				    optional_fields_length, optional_fields, alignment);
 	  
 	  array_list_insert(alignment, alignment_list);

@@ -31,7 +31,9 @@ options_t *options_new(void) {
   options->write_size = DEFAULT_WRITE_BATCH_SIZE;
   options->min_seed_padding_left = DEFAULT_MIN_SEED_PADDING_LEFT;
   options->min_seed_padding_right = DEFAULT_MIN_SEED_PADDING_RIGHT;
-  options->min_score = DEFAULT_SW_MIN_SCORE;
+
+  options->min_score = DEFAULT_MIN_SCORE;
+
   options->match = DEFAULT_SW_MATCH;
   options->mismatch = DEFAULT_SW_MISMATCH;
   options->gap_open = DEFAULT_SW_GAP_OPEN;
@@ -46,7 +48,7 @@ options_t *options_new(void) {
   options->report_n_hits = 0;
   options->report_best = 0;
   options->report_only_paired = 0;
-  options->gpu_process = 0;
+  options->workflow_enable = 1;
   options->bwt_set = 0;
   options->reg_set = 0;
   options->cal_set = 0;
@@ -54,6 +56,7 @@ options_t *options_new(void) {
   options->filter_read_mappings = DEFAULT_FILTER_READ_MAPPINGS;
   options->filter_seed_mappings = DEFAULT_FILTER_SEED_MAPPINGS;
   //=========================================================
+
   options->min_cal_size = 0; 
   options->seeds_max_distance = 0;
   options->batch_size = 0;
@@ -227,12 +230,13 @@ void options_display(options_t *options) {
      unsigned int pair_min_distance =  (unsigned int)options->pair_min_distance;
      unsigned int pair_max_distance =  (unsigned int)options->pair_max_distance;
      unsigned int min_intron_length =  (unsigned int)options->min_intron_length;
-     unsigned int gpu_process = (unsigned int)options->gpu_process;
-     float min_score =  (float)options->min_score;
-     float match =   (float)options->match;
-     float mismatch =   (float)options->mismatch;
-     float gap_open =   (float)options->gap_open;
-     float gap_extend =   (float)options->gap_extend;
+     //unsigned int gpu_process = (unsigned int)options->gpu_process;
+
+     int min_score    =  (int)options->min_score;
+     float match      =  (float)options->match;
+     float mismatch   =  (float)options->mismatch;
+     float gap_open   =  (float)options->gap_open;
+     float gap_extend =  (float)options->gap_extend;
 
      printf("\n");
      printf("+--------------------------------------------------------------------------------------+\n");
@@ -250,6 +254,7 @@ void options_display(options_t *options) {
      }
      printf("\tBWT index directory name: %s\n", bwt_dirname);
      printf("\tOutput directory name: %s\n", output_name);
+     printf("\tMin score: %d\n", min_score);
      printf("\n");
      printf("Architecture parameters\n");
      printf("\tNumber of cpu threads %d\n",  num_cpu_threads);
@@ -292,13 +297,13 @@ void options_display(options_t *options) {
      printf("\tMax. distance: %d\n", pair_max_distance);
      printf("\n");
      printf("Smith-Waterman parameters\n");
-     printf("\tMin score  : %0.4f\n", min_score);
      printf("\tMatch      : %0.4f\n", match);
      printf("\tMismatch   : %0.4f\n", mismatch);
      printf("\tGap open   : %0.4f\n", gap_open);
      printf("\tGap extend : %0.4f\n", gap_extend);
      printf("\n");
-     if (strcmp(options->mode, "rna") == 0) {
+
+     if (strcmp(options->mode, "RNA") == 0) {
        printf("RNA parameters\n");
        printf("\tMax intron length: %d\n", max_intron_length);
        printf("\tMin intron length: %d\n", min_intron_length);
@@ -341,7 +346,9 @@ void** argtable_options_new(void) {
      argtable[21] = arg_dbl0(NULL, "sw-mismatch", NULL, "Mismatch value for Smith-Waterman algorithm");
      argtable[22] = arg_dbl0(NULL, "sw-gap-open", NULL, "Gap open penalty for Smith-Waterman algorithm");
      argtable[23] = arg_dbl0(NULL, "sw-gap-extend", NULL, "Gap extend penalty for Smith-Waterman algorithm");
-     argtable[24] = arg_dbl0(NULL, "sw-min-score", NULL, "Minimum score for valid mappings");
+
+     argtable[24] = arg_int0(NULL, "min-score", NULL, "Minimum score for valid mappings");
+
      argtable[25] = arg_int0(NULL, "max-intron-size", NULL, "Maximum intron size");
      argtable[26] = arg_int0(NULL, "min-intron-size", NULL, "Minimum intron size");
      argtable[27] = arg_lit0("t", "time", "Timming mode active");
@@ -357,7 +364,7 @@ void** argtable_options_new(void) {
      argtable[37] = arg_int0(NULL, "report-n-hits", NULL, "Report <n> hits");
      argtable[38] = arg_int0(NULL, "num-seeds", NULL, "Number of seeds per read");
      argtable[39] = arg_int0(NULL, "min-num-seeds", NULL, "Minimum number of seeds to create a CAL (if -1, the maxixum will be taken)");
-     argtable[40] = arg_lit0(NULL, "gpu-enable", "Enable GPU Process");
+     argtable[40] = arg_lit0(NULL, "workflow-disable", "Disable Workflow Pipeline");
      argtable[41] = arg_lit0(NULL, "report-only-paired", "Report only the paired reads");
      argtable[42] = arg_int0(NULL, "filter-read-mappings", NULL, "Reads that map in more than <n> locations are discarded");
      argtable[43] = arg_int0(NULL, "filter-seed-mappings", NULL, "Seeds that map in more than <n> locations are discarded");
@@ -436,7 +443,9 @@ options_t *read_CLI_options(void **argtable, options_t *options) {
   if (((struct arg_dbl*)argtable[21])->count) { options->mismatch = *(((struct arg_dbl*)argtable[21])->dval); }
   if (((struct arg_dbl*)argtable[22])->count) { options->gap_open = *(((struct arg_dbl*)argtable[22])->dval); }
   if (((struct arg_dbl*)argtable[23])->count) { options->gap_extend = *(((struct arg_dbl*)argtable[23])->dval); }
-  if (((struct arg_dbl*)argtable[24])->count) { options->min_score = *(((struct arg_dbl*)argtable[24])->dval); }
+
+  if (((struct arg_int*)argtable[24])->count) { options->min_score = *(((struct arg_int*)argtable[24])->ival); }
+
   if (((struct arg_int*)argtable[25])->count) { options->max_intron_length = *(((struct arg_int*)argtable[25])->ival); }
   if (((struct arg_int*)argtable[26])->count) { options->min_intron_length = *(((struct arg_int*)argtable[26])->ival); }
   if (((struct arg_int*)argtable[27])->count) { options->timming = ((struct arg_int*)argtable[27])->count; }
@@ -452,13 +461,7 @@ options_t *read_CLI_options(void **argtable, options_t *options) {
   if (((struct arg_int*)argtable[37])->count) { options->report_n_hits = *(((struct arg_int*)argtable[37])->ival); }
   if (((struct arg_int*)argtable[38])->count) { options->num_seeds = *(((struct arg_int*)argtable[38])->ival); }
   if (((struct arg_int*)argtable[39])->count) { options->min_num_seeds_in_cal = *(((struct arg_int*)argtable[39])->ival); }
-  if (((struct arg_int*)argtable[40])->count) { 
-    #ifdef HPG_GPU
-       options->gpu_process = (((struct arg_int *)argtable[40])->count); 
-    #else
-       options->gpu_process = 0; 
-    #endif
-  }
+  if (((struct arg_int*)argtable[40])->count) { options->workflow_enable = (((struct arg_int *)argtable[40])->count) == 1 ? 0 : 1; }
   if (((struct arg_int*)argtable[41])->count) { options->report_only_paired = (((struct arg_int*)argtable[41])->count); }
   if (((struct arg_int*)argtable[42])->count) { options->filter_read_mappings = *(((struct arg_int*)argtable[42])->ival); }
   if (((struct arg_int*)argtable[43])->count) { options->filter_seed_mappings = *(((struct arg_int*)argtable[43])->ival); }

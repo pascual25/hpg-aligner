@@ -74,7 +74,7 @@ void run_bs_unified_aligner(genome_t *genome2, genome_t *genome1, genome_t *geno
   
   region_seeker_input_t region_input;
   region_seeker_input_init(NULL, cal_optarg, bwt_optarg, 
-			   bwt_index1, NULL, 0, options->gpu_process, 0, 0, 
+			   bwt_index1, NULL, 0, 0, 0, 0, 
 			   genome, NULL, &region_input);
   region_input.bwt_index2_p = bwt_index2;
   

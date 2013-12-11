@@ -29,9 +29,11 @@
 #define DEFAULT_NUM_SW_THREADS		1
 #define DEFAULT_NUM_SEEDS		10
 #define DEFAULT_MIN_NUM_SEEDS_IN_CAL	-1
-#define DEFAULT_MAX_INTRON_LENGTH	800000
+#define DEFAULT_MAX_INTRON_LENGTH	500000
 #define DEFAULT_MIN_INTRON_LENGTH	40
-#define DEFAULT_SW_MIN_SCORE		0.6
+
+#define DEFAULT_MIN_SCORE		40
+
 #define DEFAULT_SW_MATCH		5
 #define DEFAULT_SW_MISMATCH		-4
 #define DEFAULT_SW_GAP_OPEN		10
@@ -86,7 +88,7 @@ typedef struct options {
   int report_n_hits;
   int report_best;
   int report_only_paired;
-  int gpu_process;
+  int workflow_enable;
   int log_level;
   int index_ratio;
   int filter_read_mappings;

@@ -553,7 +553,7 @@ int file_read_cals(size_t num_items, array_list_t *list,
 }
 
 int file_read_meta_alignments(size_t num_items, array_list_t *list, 
-			      fastq_read_t *fq_read, FILE *fd) {
+                              fastq_read_t *fq_read, FILE *fd) {
 
   if (!num_items) { return 0; }
 
@@ -583,30 +583,17 @@ int file_read_meta_alignments(size_t num_items, array_list_t *list,
     memcpy(&cigars_test[i], &cigar_buffer[actual_read], simple_a->cigar_len);
     cigars_test[i][simple_a->cigar_len] = '\0';
     actual_read += simple_a->cigar_len;
-
-    size_t map_len_genome = 0;
-    cigar_code_t *cc = cigar_code_new_by_string(cigars_test[i]);
-    for (int c = 0; c < cc->ops->size; c++) {
-      cigar_op_t *op = cigar_code_get_op(c, cc);
-      if (op->name == 'M' ||
-	  op->name == 'D' ||
-	  op->name == 'N') {
-	map_len_genome += op->number;
-      }
-    }
     //printf("CIGAR %i: %s\n", i, cigars_test[i]);
-
-    size_t map_len_read = fq_read->length - simple_a->gap_start - simple_a->gap_end;
-
+    size_t map_len = fq_read->length - simple_a->gap_start - simple_a->gap_end;
     //printf("SEED := len_read:%i - gap_read:%i - gap_end:%i = %i, SEED-END = %i\n", fq_read->length, 
-    //   simple_a->gap_start, 
-    //   simple_a->gap_end, 
-    //   map_len, simple_a->gap_start + map_len);
+    //     simple_a->gap_start, 
+    //     simple_a->gap_end, 
+    //     map_len, simple_a->gap_start + map_len);
     seed_region_t *s_region = seed_region_new(simple_a->gap_start, 
-					      simple_a->gap_start + map_len_read - 1,
-					      simple_a->map_start, 
-					      simple_a->map_start + map_len_genome - 1,
-					      0);
+                                              simple_a->gap_start + map_len - 1,
+                                              simple_a->map_start, 
+                                              simple_a->map_start + map_len - 1,
+                                              0);
     
     //printf("Exit with seed [%i:%i]\n", s_region->read_start, s_region->read_end);
     
@@ -615,23 +602,23 @@ int file_read_meta_alignments(size_t num_items, array_list_t *list,
     linked_list_insert(s_region, sr_list);
     
     cal_t *cal = cal_new(simple_a->map_chromosome, 
-			 simple_a->map_strand,
-			 simple_a->map_start,
-			 simple_a->map_start + map_len_genome - 1,
-			 1,
-			 sr_list,
-			 linked_list_new(COLLECTION_MODE_ASYNCHRONIZED));
-
+                         simple_a->map_strand,
+                         simple_a->map_start,
+                         simple_a->map_start + map_len - 1,
+                         1,
+                         sr_list,
+                         linked_list_new(COLLECTION_MODE_ASYNCHRONIZED));
+    cigar_code_t *cc = cigar_code_new_by_string(cigars_test[i]);
     cc->distance = simple_a->map_distance;
     cal->info = cc;
 
-    meta_alignment_t *meta_alignment = meta_alignment_new();
-    
+    meta_alignment_t *meta_alignment = meta_alignment_new();    
     for (int m = 0; m < array_list_size(cc->ops); m++) {
       cigar_op_t *op = array_list_get(m, cc->ops);
       cigar_code_append_new_op(op->number, op->name, meta_alignment->cigar_code);
       //array_list_insert(cigar_op, ->ops);
     }
+    meta_alignment->cigar_code->distance = simple_a->map_distance;
 
     array_list_insert(cal, meta_alignment->cals_list);
     array_list_insert(meta_alignment, list);
@@ -889,6 +876,9 @@ void file_write_meta_alignments(fastq_read_t *fq_read, array_list_t *items, FILE
     int cigar_len = strlen(cigar_str);
 
     //cal_print(first_cal);
+    //if (strcmp(fq_read->id, "@ENST00000463781@ENSG00000145113@protein_coding@3@195473636@195539148@-1@KNOWN_7557_7641_0_1_0_0_7:0:0_5:0:0_26e/1")==0) {	
+    //printf("WRITE: (%i) %s\n", meta_alignment->cigar_code->distance, new_cigar_code_string(meta_alignment->cigar_code));
+    //}
 
     simple_a = &simple_alignment[i];
 
