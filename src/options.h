@@ -16,6 +16,7 @@
 #include "commons/log.h"
 #include "commons/system_utils.h"
 #include "commons/file_utils.h"
+#include "build-index/index_builder.h"
 
 //============================ DEFAULT VALUES ============================
 #define DEFAULT_GPU_THREADS		32
@@ -50,8 +51,7 @@
 #define DEFAULT_FILTER_SEED_MAPPINGS_BS 500
 //=====================================================================
 
-//#define NUM_OPTIONS			45
-#define NUM_OPTIONS			46
+#define NUM_OPTIONS			47
 
 typedef struct options {
   char mode[64];
@@ -99,6 +99,7 @@ typedef struct options {
   double mismatch;
   double gap_open;
   double gap_extend;
+  double filter_value;
   char* prefix_name;
   char* in_filename;
   char* in_filename2;

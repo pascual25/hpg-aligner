@@ -64,8 +64,10 @@ options_t *options_new(void) {
   options->seed_size = 0;
   options->flank_length = 0;
 
-  //new variables for bisulphite case in index generation
+  //new variables for bisulphite
   options->bs_index = 0;
+  options->filter_value = 0.8;
+
   return options;
 }
 
@@ -369,12 +371,15 @@ void** argtable_options_new(void) {
      argtable[42] = arg_int0(NULL, "filter-read-mappings", NULL, "Reads that map in more than <n> locations are discarded");
      argtable[43] = arg_int0(NULL, "filter-seed-mappings", NULL, "Seeds that map in more than <n> locations are discarded");
      argtable[44] = arg_lit0(NULL, "report-best", "Report all alignments with best score");
+     
      argtable[45] = arg_lit0(NULL, "bs-index", "Indicate the use of bisulphite generation of the index");
+     argtable[46] = arg_dbl0(NULL, "filter-value", NULL, "Filter value for bwt search");
 
      argtable[NUM_OPTIONS] = arg_end(20);
      
      return argtable;
 }
+
 
 
 void argtable_options_free(void **argtable) {
@@ -471,6 +476,7 @@ options_t *read_CLI_options(void **argtable, options_t *options) {
   // new value
 
   if (((struct arg_int*)argtable[45])->count) { options->bs_index = (((struct arg_int*)argtable[45])->count); }
+  if (((struct arg_dbl*)argtable[46])->count) { options->filter_value = *(((struct arg_dbl*)argtable[46])->dval); }
 
   return options;
 }
@@ -478,32 +484,48 @@ options_t *read_CLI_options(void **argtable, options_t *options) {
 
 options_t *parse_options(int argc, char **argv) {
   void **argtable = argtable_options_new();
+  char *command = argv[0];
+
   //	struct arg_end *end = arg_end(10);
   //	void **argtable = argtable_options_get(argtable_options, end);
   
   options_t *options = options_new();
   if (argc < 2) {
-    usage(argtable);
+    if (strcmp(command, "build-index") == 0) {
+      help_index_builder();	
+    } else {
+      usage(argtable);
+    }    
     exit(-1);
   }else {
-
     int num_errors = arg_parse(argc, argv, argtable);
-
     if (((struct arg_int*)argtable[29])->count) {
-      usage(argtable);
-	argtable_options_free(argtable);
-	options_free(options);
-	exit(0);
+      if (strcmp(command, "build-index") == 0) {
+	help_index_builder();	
+      } else {
+	usage(argtable);
+      }
+      argtable_options_free(argtable);
+      options_free(options);
+      exit(0);
     }
         
     if (num_errors > 0) {
       arg_print_errors(stdout, argtable[NUM_OPTIONS], "hpg-aligner");	// struct end is always allocated in the last position
-      usage(argtable);
+      if (strcmp(command, "build-index") == 0) {
+	help_index_builder();	
+      } else {
+	usage(argtable);
+      }
       exit(-1);
     }else {
       options = read_CLI_options(argtable, options);
       if(options->help) {
-	usage(argtable);
+	if (strcmp(command, "build-index") == 0) {
+	  help_index_builder();	
+	} else {
+	  usage(argtable);
+	}	
 	argtable_options_free(argtable);
 	options_free(options);
 	exit(0);

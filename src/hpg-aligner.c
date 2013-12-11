@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
     usage_cli();
   }
 
-  char *command = argv[1];  
+  char *command = argv[1];
   // We need to consume command: {dna | rna | bs | build-index}
   argc -= 1;
   argv += 1;
@@ -150,6 +150,7 @@ int main(int argc, char* argv[]) {
   init_log_custom(options->log_level, 1, "hpg-aligner.log", "w");
 
   validate_options(options, command);
+
   LOG_DEBUG_F("Command Mode: %s\n", command);
 
   if (!strcmp(command, "build-index")) {

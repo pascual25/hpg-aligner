@@ -28,7 +28,7 @@ void help_index_builder() {
      printf("-i, --bwt-index=<directory>\tBWT directory name\n");
      printf("-g, --ref-genome=<file>\t\tReference genome\n");
      printf("-r, --index-ratio=<int>\t\tBWT index ratio of compression\n");
-     printf("-bs, --bisulphite-index\t\tIndicates the generation of index for bisulphite case\n");
+     printf("--bs,--bs-index\t\t\tIndicates the generation of index for bisulphite case\n");
      exit(0);
 }
 
