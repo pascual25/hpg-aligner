@@ -706,7 +706,6 @@ int apply_bwt_bs(bwt_server_input_t* input, batch_t *batch) {
 }
 
 //------------------------------------------------------------------------------------
-// a completar
 int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
   LOG_DEBUG("========= APPLY BWT BS UNIFIED START =========\n");
   struct timeval start, end;
@@ -715,7 +714,6 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
   if (time_on) { start_timer(start); }
 
   mapping_batch_t *mapping_batch = batch->mapping_batch;
-  // bs variables
 
   //copy the batch reads
   size_t num_reads = array_list_size(mapping_batch->fq_batch);
@@ -773,6 +771,7 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
   size_t chunk = MAX(1, num_reads/(num_threads*10));
   fastq_read_t* fq_read;
   mapping_batch->num_targets = 0;
+  mapping_batch->num_targets2 = 0;
 
   size_t Nc, Ng;
   float Ncg, Ngc;
@@ -868,10 +867,14 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
       }
       printf("End list 2\n");
       */
+
+      // for debug process only
       array_list_clear(mapping_batch->mapping_lists[i], (void *) NULL);
       array_list_clear(mapping_batch->mapping_lists2[i], (void *) NULL);
     }
     //---------------------------------
+
+    return CONSUMER_STAGE;
 
     //printf("NUM ITEMS LIST   = %i\n", mapping_batch->mapping_lists[i]->size);
     //printf("NUM ITEMS LIST 2 = %i\n", mapping_batch->mapping_lists2[i]->size);
@@ -899,32 +902,20 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
       array_list_set_flag(BS_ALIGNMENTS, mapping_batch->mapping_lists2[i]);
     } else {
       //imprimir (o guardar) las reads no mapeadas exactas (para depuración)
-      if (array_list_get_flag(mapping_batch->mapping_lists[i])  != BS_EXCEEDED && 
-	  array_list_get_flag(mapping_batch->mapping_lists2[i]) != BS_EXCEEDED) {
-	//if (mapping_batch->mapping_lists[i]->size) {
-	//  bwt_search_pair_anchors(mapping_batch->mapping_lists[i], fq_read->length);	
-	//}
-	//if (!mapping_batch->mapping_lists[i]->size) {
-	//  array_list_set_flag(NOT_ANCHORS, mapping_batch->mapping_lists[i]);	  
-	//}
-
-	//if(mapping_batch->mapping_lists2[i]->size) {
-	//  bwt_search_pair_anchors(mapping_batch->mapping_lists2[i], fq_read->length);	
-	//}
-	//if (!mapping_batch->mapping_lists2[i]->size) {
-	//  array_list_set_flag(NOT_ANCHORS, mapping_batch->mapping_lists2[i]);	  
-	//}
-	mapping_batch->targets[(mapping_batch->num_targets)++] = i;
-
-	//array_list_set_flag(1, mapping_batch->mapping_lists2[i]);
-	//fq_read = (fastq_read_t *) array_list_get(i, mapping_batch->fq_batch);
-	//printf("+read %lu not mapped\nid  %s\n%seq s\n\n", i, fq_read->id, fq_read->sequence);
-      } else {
+      if (array_list_get_flag(mapping_batch->mapping_lists[i])  == BS_EXCEEDED ||
+	  array_list_get_flag(mapping_batch->mapping_lists2[i]) == BS_EXCEEDED) {
 	// at least one of the mappings found exceeded alignments
 	array_list_clear(mapping_batch->mapping_lists[i], NULL);
 	array_list_clear(mapping_batch->mapping_lists2[i], NULL);
 	array_list_set_flag(BS_EXCEEDED, mapping_batch->mapping_lists[i]);
 	array_list_set_flag(BS_EXCEEDED, mapping_batch->mapping_lists2[i]);
+      } else {
+	if (array_list_get_flag(mapping_batch->mapping_lists[i])  != BS_EXCEEDED) {
+	  mapping_batch->targets[ (mapping_batch->num_targets)++ ]  = i;
+	}
+	if (array_list_get_flag(mapping_batch->mapping_lists2[i]) != BS_EXCEEDED) {
+	  mapping_batch->targets2[(mapping_batch->num_targets2)++] = i;
+	}
       }
     }
 
@@ -938,8 +929,9 @@ int apply_bwt_bs_un(bwt_server_input_t* input, batch_t *batch) {
 	   ALIGNMENTS_FOUND,NOT_ANCHORS,SINGLE_ANCHORS,DOUBLE_ANCHORS,ALIGNMENTS_EXCEEDED);
     */
   }// end for(reads)
-  
-  return CONSUMER_STAGE;
+
+  // for debug process only
+  return BS_UN_SW_STAGE;
 
   size_t num_mapped_reads = array_list_size(mapping_batch->fq_batch) - mapping_batch->num_targets;
   mapping_batch->num_to_do = num_mapped_reads;
