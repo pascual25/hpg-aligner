@@ -286,19 +286,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	      first = -1;
 	      last = -1;
 	      ref = (char *) malloc((gap_genome_len + 5) * sizeof(char));
-	      /*
-	      // handle strand -
-	      if (cal->strand) {
-	      genome_read_sequence_by_chr_index(ref, 0, cal->chromosome_id - 1, 
-	      &start, &end, genome2);
-	      query = &read2->sequence[gap_read_start];
-	      //query = &read2->sequence[read2->length - gap_read_end];
-	      } else {
-	      genome_read_sequence_by_chr_index(ref, 0, cal->chromosome_id - 1, 
-	      &start, &end, genome1);
-	      query = &read1->sequence[gap_read_start];
-	      }
-	      */
+
 	      genome_read_sequence_by_chr_index(ref, 0, cal->chromosome_id - 1,
 						&start, &end, genome);
 	      query = &read->sequence[gap_read_start];
