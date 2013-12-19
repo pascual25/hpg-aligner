@@ -5,7 +5,7 @@
 int apply_sw_bs_un(sw_server_input_t* input, batch_t *batch) {
   LOG_DEBUG("========= APPLY SW BS UNIFIED START =========\n");
 
-  return BS_UN_POST_PAIR_STAGE;
+  //return BS_UN_POST_PAIR_STAGE;
 
   LOG_DEBUG("------------ APPLY SW BS UN 4NT START -----------------------\n");
   mapping_batch_t *mapping_batch = batch->mapping_batch;
@@ -14,20 +14,6 @@ int apply_sw_bs_un(sw_server_input_t* input, batch_t *batch) {
   sw_optarg_t *sw_optarg = &input->sw_optarg;
 
   // fill gaps between seeds
-  /*
-  {
-    char r[1024];
-    size_t start = 169312417;
-    size_t end = start + 99;
-    genome_read_sequence_by_chr_index(r, 0,
-    0, &start, &end, genome2);
-    printf("+++++++++++++ genome2 = %s \n", r);
-    genome_read_sequence_by_chr_index(r, 0,
-    0, &start, &end, genome1);
-    printf("+++++++++++++ genome1 = %s \n", r);
-  }
-  */
-
   LOG_DEBUG("++++++++++ FILL GAPS 0     ++++++++++\n");
   fill_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 5, 0);
   merge_seed_regions_bs(mapping_batch, 0);

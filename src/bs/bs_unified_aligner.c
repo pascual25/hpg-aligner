@@ -122,23 +122,23 @@ void run_bs_unified_aligner(genome_t *genome2, genome_t *genome1, genome_t *geno
   workflow_set_stages(4, &stage_functions, stage_labels, wf);
   */
   // workflow definition for the analysis with the postprocess
-  workflow_stage_function_t stage_functions[] = {bwt_stage_bs_un, pre_pair_stage_bs_un, sw_stage_bs_un,
+  workflow_stage_function_t stage_functions[] = {bwt_stage_bs_un, cal_stage_bs_un, pre_pair_stage_bs_un, sw_stage_bs_un,
                                                 post_pair_stage_bs_un, bs_status_stage};
-  char *stage_labels[] = {"BWT UNIFIED", "PRE PAIR", "SW", "POST PAIR", "BS STATUS"};
-  workflow_set_stages(5, &stage_functions, stage_labels, wf);
+  char *stage_labels[] = {"BWT UNIFIED", "CAL", "PRE PAIR", "SW", "POST PAIR", "BS STATUS"};
+  workflow_set_stages(6, &stage_functions, stage_labels, wf);
 
   // optional producer and consumer functions
   workflow_set_producer(fastq_reader, "FastQ reader", wf);
   workflow_set_consumer(bs_writer, "BAM BS writer", wf);
   
   //if (time_on) {
-  start_timer(start);
-  //}
-  
+  extern double time_alig;
+  extern struct timeval time_start_alig, time_end_alig;
+
+  start_timer(time_start_alig);
   workflow_run_with(options->num_cpu_threads, wf_input, wf);
-  
-  //if (time_on) {
-  stop_timer(start, end, main_time);
+  stop_timer(time_start_alig, time_end_alig, time_alig);
+
   LOG_DEBUG("========= END OF WORKFLOW =========\n");
   //printf("Total Time: %4.04f sec\n", time / 1000000);
   //}

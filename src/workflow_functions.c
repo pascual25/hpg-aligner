@@ -732,6 +732,14 @@ int cal_stage_bs(void *data) {
 
 //--------------------------------------------------------------------
 
+int cal_stage_bs_un(void *data) {
+  batch_t *batch = (batch_t *) data;
+  //printf("Init CAL\n");
+  return apply_caling_bs_un(batch->cal_input, batch);
+}
+
+//--------------------------------------------------------------------
+
 int rna_preprocess_stage(void *data) {
   batch_t *batch = (batch_t *) data;
   return apply_preprocess_rna(batch->preprocess_rna, batch);

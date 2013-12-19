@@ -138,13 +138,13 @@ void run_bs_aligner(genome_t *genome2, genome_t *genome1, genome_t *genome,
   workflow_set_consumer(bs_writer, "BAM BS writer", wf);
   
   //if (time_on) {
-  start_timer(start);
-  //}
-  
+  extern double time_alig;
+  extern struct timeval time_start_alig, time_end_alig;
+
+  start_timer(time_start_alig);
   workflow_run_with(options->num_cpu_threads, wf_input, wf);
+  stop_timer(time_start_alig, time_end_alig, time_alig);
   
-  //if (time_on) {
-  stop_timer(start, end, main_time);
   //printf("Total Time: %4.04f sec\n", time / 1000000);
   //}
   

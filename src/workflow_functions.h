@@ -89,6 +89,8 @@ int bwt_stage_bs_un(void *data);
 
 int pre_pair_stage_bs_un(void *data);
 
+int cal_stage_bs_un(void *data);
+
 int sw_stage_bs_un(void *data);
 
 int post_pair_stage_bs_un(void *data);

@@ -1245,6 +1245,7 @@ int apply_pair(pair_server_input_t* input, batch_t *batch) {
 int apply_pair_bs_un(pair_server_input_t* input, batch_t *batch) {
 
   LOG_DEBUG("========= APPLY PRE PAIR BS UNIFIED START =========\n");
+  // check the funtionality
   return BS_UN_SW_STAGE;
 
   //  printf("START: apply_pair\n"); 
@@ -1474,8 +1475,7 @@ int prepare_alignments_bs_un(pair_server_input_t *input, batch_t *batch) {
 
   LOG_DEBUG("========= PREPARE ALIGNMENTS BS UNIFIED START =========\n");
   
-  return BS_UN_STATUS_STAGE;
-
+  //return BS_UN_STATUS_STAGE;
 
   //printf("---------->Prepare alignments\n");
   if (batch->mapping_mode == BS_MODE) {
