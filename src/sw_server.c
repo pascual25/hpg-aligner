@@ -380,13 +380,13 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
   subst_matrix['N']['N'] = match;
 
   /*
-  float a = match * factor_match;
-  float b = mismatch / factor_mismatch;
-  float c = mismatch / factor_mismatch;
+  float x = ;
+  float y = mismatch / factor_mismatch;
+  float z = mismatch / factor_mismatch;
   */
-  float x = 5;
-  float y = 5;
-  float z = 5;
+  float x = 40;
+  float y = -2;
+  float z = -2;
 
   if (type == 1) {
     subst_matrix['C']['C'] = x;
