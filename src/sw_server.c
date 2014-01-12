@@ -811,28 +811,29 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
   genome_t *genome2 = input->genome2_p; // genome ACT (C->T)
   sw_optarg_t *sw_optarg = &input->sw_optarg;
 
-  // fill gaps between seeds
-  /*
-  {
-    char r[1024];
-    size_t start = 169312417;
-    size_t end = start + 99;
-    genome_read_sequence_by_chr_index(r, 0,
-    0, &start, &end, genome2);
-    printf("+++++++++++++ genome2 = %s \n", r);
-    genome_read_sequence_by_chr_index(r, 0,
-    0, &start, &end, genome1);
-    printf("+++++++++++++ genome1 = %s \n", r);
-  }
-  */
+  sw_optarg_t sw_optarg1;
+  sw_optarg_t sw_optarg2;
+
+  float match = sw_optarg->subst_matrix['A']['A'];
+  float missm = sw_optarg->subst_matrix['C']['A'];
+
+  sw_optarg1.gap_open   = sw_optarg->gap_open;
+  sw_optarg1.gap_extend = sw_optarg->gap_extend;
+  sw_optarg2.gap_open   = sw_optarg->gap_open;
+  sw_optarg2.gap_extend = sw_optarg->gap_extend;
+
+  fill_matrix(sw_optarg1.subst_matrix, match, missm, 0, 8, 2);
+  fill_matrix(sw_optarg2.subst_matrix, match, missm, 1, 8, 2);
 
   LOG_DEBUG("++++++++++ FILL GAPS 0     ++++++++++\n");
+  sw_optarg = &sw_optarg1;
   fill_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 5, 0);
   merge_seed_regions_bs(mapping_batch, 0);
   fill_end_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 400, 0);
   LOG_DEBUG("++++++++++  END LIST 0     ++++++++++\n");
 
   LOG_DEBUG("++++++++++ FILL GAPS 1     ++++++++++\n");
+  sw_optarg = &sw_optarg2;
   fill_gaps_bs(mapping_batch, sw_optarg, genome2, genome1, 20, 5, 1);
   merge_seed_regions_bs(mapping_batch, 1);
   fill_end_gaps_bs(mapping_batch, sw_optarg, genome2, genome1, 20, 400, 1);
