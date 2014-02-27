@@ -357,19 +357,25 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
 
   subst_matrix['A']['A'] = match;
   subst_matrix['C']['A'] = mismatch;
+  subst_matrix['G']['A'] = mismatch;
   subst_matrix['T']['A'] = mismatch;
   subst_matrix['N']['A'] = mismatch;
 
   subst_matrix['A']['C'] = mismatch;
+  subst_matrix['C']['C'] = match;
   subst_matrix['G']['C'] = mismatch;
+  subst_matrix['T']['C'] = mismatch;
   subst_matrix['N']['C'] = mismatch;
 
   subst_matrix['A']['T'] = mismatch;
-  subst_matrix['T']['T'] = match;
+  subst_matrix['C']['T'] = mismatch;
   subst_matrix['G']['T'] = mismatch;
+  subst_matrix['T']['T'] = match;
   subst_matrix['N']['T'] = mismatch;
 
+  subst_matrix['A']['G'] = mismatch;
   subst_matrix['C']['G'] = mismatch;
+  subst_matrix['G']['G'] = match;
   subst_matrix['T']['G'] = mismatch;
   subst_matrix['N']['G'] = mismatch;
 
@@ -380,28 +386,45 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
   subst_matrix['N']['N'] = match;
 
   /*
-  float a = match * factor_match;
-  float b = mismatch / factor_mismatch;
-  float c = mismatch / factor_mismatch;
-  */
-  float x = 5;
-  float y = 5;
-  float z = 5;
+  float x = 500;
+  float y = -400;
+  float z = 2.5;
+  float w = -2;
 
   if (type == 1) {
+    subst_matrix['C']['A'] = y;
     subst_matrix['C']['C'] = x;
-    subst_matrix['T']['C'] = y;
-    subst_matrix['C']['T'] = z;
-    subst_matrix['G']['G'] = match;
-    subst_matrix['A']['G'] = mismatch;
-    subst_matrix['G']['A'] = mismatch;
+    subst_matrix['C']['G'] = y;
+    subst_matrix['C']['T'] = y;
+
+    subst_matrix['T']['A'] = w;
+    subst_matrix['T']['C'] = z;
+    subst_matrix['T']['G'] = w;
+    subst_matrix['T']['T'] = z;
+
   } else {
-    subst_matrix['C']['C'] = match;
-    subst_matrix['T']['C'] = mismatch;
-    subst_matrix['C']['T'] = mismatch;
+    subst_matrix['G']['T'] = y;
     subst_matrix['G']['G'] = x;
-    subst_matrix['A']['G'] = y;
-    subst_matrix['G']['A'] = z;
+    subst_matrix['G']['C'] = y;
+    subst_matrix['G']['A'] = y;
+
+    subst_matrix['A']['T'] = w;
+    subst_matrix['A']['G'] = z;
+    subst_matrix['A']['C'] = w;
+    subst_matrix['A']['A'] = z;
+  }
+  */
+
+  if (type == 1) {
+    subst_matrix['C']['C'] = 40;
+    subst_matrix['C']['T'] = -2;
+
+    subst_matrix['T']['C'] = -2;
+  } else {
+    subst_matrix['G']['G'] = 40;
+    subst_matrix['G']['A'] = -2;
+
+    subst_matrix['A']['G'] = -2;
   }
 
 }
