@@ -384,12 +384,16 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
   subst_matrix['T']['N'] = mismatch;
   subst_matrix['G']['N'] = mismatch;
   subst_matrix['N']['N'] = match;
-
   /*
   float x = 500;
   float y = -400;
   float z = 2.5;
   float w = -2;
+  */
+  float x = 5;
+  float y = -4;
+  float z = 5;
+  float w = -4;
 
   if (type == 1) {
     subst_matrix['C']['A'] = y;
@@ -413,8 +417,8 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
     subst_matrix['A']['C'] = w;
     subst_matrix['A']['A'] = z;
   }
-  */
 
+  /*
   if (type == 1) {
     subst_matrix['C']['C'] = 40;
     subst_matrix['C']['T'] = -2;
@@ -426,7 +430,7 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
 
     subst_matrix['A']['G'] = -2;
   }
-
+  */
 }
 
 //--------------------------------------------------------------------------------------
@@ -830,8 +834,8 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
 
   LOG_DEBUG("------------ APPLY SW BS 4NT START -----------------------\n");
   mapping_batch_t *mapping_batch = batch->mapping_batch;
-  genome_t *genome1 = input->genome1_p; // genome ACT (G->A)
-  genome_t *genome2 = input->genome2_p; // genome ACT (C->T)
+  genome_t *genome1 = input->genome_p;
+  genome_t *genome2 = input->genome_p;
   sw_optarg_t *sw_optarg = &input->sw_optarg;
 
   // fill gaps between seeds
