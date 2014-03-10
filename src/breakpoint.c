@@ -149,6 +149,8 @@ void cigar_code_add_op(cigar_op_t *op, cigar_code_t *p) {
   }
 }
 
+char *new_cigar_code_string(cigar_code_t *p);
+
 void cigar_code_append_op(cigar_op_t *op, cigar_code_t *p) {
   if (p && p->ops && op) {
     cigar_op_t *last = cigar_code_get_last_op(p);
@@ -156,6 +158,20 @@ void cigar_code_append_op(cigar_op_t *op, cigar_code_t *p) {
       last->number += op->number;
       //cigar_op_free(op);
     } else {
+      int num_ops = cigar_code_get_num_ops(p);
+      if (last && num_ops > 1 && last->name == 'S') {
+	//printf("00 change S -> M : %s (insert %i%c)\n", new_cigar_code_string(p), op->number, op->name);
+	// a little bit tricky
+	cigar_op_t *last1 = cigar_code_get_op(num_ops - 2, p);
+	if (last1->name == 'M') {
+	  array_list_remove_at(num_ops - 1, p->ops);
+	  last1->number += last->number;
+	} else {
+	  last->name = 'M';
+	}
+	//printf("11 change S -> M : %s (insert %i%c)\n", new_cigar_code_string(p), op->number, op->name);
+	//exit(-1);
+      }
       array_list_insert(cigar_op_new(op->number, op->name), p->ops);
     }
   }
@@ -593,7 +609,11 @@ cigar_code_t *generate_cigar_code(char *query_map, char *ref_map, unsigned int m
       value++;
     }
     if (value > 0) {
-      cigar_code_append_op(cigar_op_new(value, 'S'), p);
+      if (ref_start == 0 && query_start == 0) {
+	cigar_code_append_op(cigar_op_new(value, 'S'), p);
+      } else {
+	value = 0;
+      }
     } 
   } else if (query_map[0] == '-') {
     if (ref_map[0] == '-') {

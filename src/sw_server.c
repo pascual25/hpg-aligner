@@ -390,6 +390,7 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
   float z = 2.5;
   float w = -2;
   */
+
   float x = 5;
   float y = -4;
   float z = 5;
@@ -834,8 +835,9 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
 
   LOG_DEBUG("------------ APPLY SW BS 4NT START -----------------------\n");
   mapping_batch_t *mapping_batch = batch->mapping_batch;
-  genome_t *genome1 = input->genome_p;
-  genome_t *genome2 = input->genome_p;
+  genome_t *genome  = input->genome_p;
+  genome_t *genome1 = input->genome1_p;
+  genome_t *genome2 = input->genome2_p;
   sw_optarg_t *sw_optarg = &input->sw_optarg;
 
   // fill gaps between seeds
@@ -853,17 +855,43 @@ void apply_sw_bs_4nt(sw_server_input_t* input, batch_t *batch) {
   }
   */
 
+  ///////////////////////////////
+  // Esta sección debe sacarse fuera de este fichero y ponerlo en el inicio de la ejecución
+  ///////////////////////////////
+  sw_optarg_t sw_optarg1;
+  sw_optarg_t sw_optarg2;
+ 
+  float match = sw_optarg->subst_matrix['A']['A'];
+  float missm = sw_optarg->subst_matrix['C']['A'];
+  float gap_open = sw_optarg->gap_open;
+  float gap_extend = sw_optarg->gap_extend;
+
+  sw_optarg1.gap_open   = gap_open;
+  sw_optarg1.gap_extend = gap_extend;
+  sw_optarg2.gap_open   = gap_open;
+  sw_optarg2.gap_extend = gap_extend;
+  
+  fill_matrix(sw_optarg1.subst_matrix, match, missm, 0, 8, 2);
+  fill_matrix(sw_optarg2.subst_matrix, match, missm, 1, 8, 2);
+  ///////////////////////////////
+
+  //genome1 = input->genome_p;
+  //genome2 = input->genome_p;
+
   LOG_DEBUG("++++++++++ FILL GAPS 0     ++++++++++\n");
-  fill_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 5, 0);
+  fill_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 5, 0, &sw_optarg1, &sw_optarg2);
   merge_seed_regions_bs(mapping_batch, 0);
   fill_end_gaps_bs(mapping_batch, sw_optarg, genome1, genome2, 20, 400, 0);
   LOG_DEBUG("++++++++++  END LIST 0     ++++++++++\n");
 
   LOG_DEBUG("++++++++++ FILL GAPS 1     ++++++++++\n");
-  fill_gaps_bs(mapping_batch, sw_optarg, genome2, genome1, 20, 5, 1);
+  fill_gaps_bs(mapping_batch, sw_optarg, genome2, genome1, 20, 5, 1, &sw_optarg2, &sw_optarg1);
   merge_seed_regions_bs(mapping_batch, 1);
   fill_end_gaps_bs(mapping_batch, sw_optarg, genome2, genome1, 20, 400, 1);
   LOG_DEBUG("++++++++++  END LIST 1     ++++++++++\n");
+
+  //sw_optarg_free(sw_optarg1);
+  //sw_optarg_free(sw_optarg2);
 
   // now we can create the alignments
   fastq_read_t *read;

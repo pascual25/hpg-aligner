@@ -138,7 +138,7 @@ void fill_end_gaps(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 
 void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg, 
 		  genome_t *genome1, genome_t *genome2, int min_gap, int min_distance,
-		  int bs_id);
+		  int bs_id, sw_optarg_t *sw_optarg1, sw_optarg_t *sw_optarg2);
 
 void merge_seed_regions_bs(mapping_batch_t *mapping_batch, int bs_id);
 
