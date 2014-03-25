@@ -511,6 +511,9 @@ float cigar_code_get_score(int read_len, cigar_code_t *p) {
   if (p) {
     match_counts = cigar_match_coverage(p);    
     match_counts -= p->distance; 
+
+    LOG_DEBUG_F("*** coverage = %d\n", cigar_match_coverage(p));
+    LOG_DEBUG_F("*** distance = %d\n", p->distance);
   }
 
   return 1.0f * match_counts / read_len;

@@ -727,6 +727,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
   array_list_t *sw_prepare_list2 = array_list_new(1000, 1.25f, COLLECTION_MODE_ASYNCHRONIZED);
 
   char *query,  *ref;
+  char c1, c2;
   int distance, first, last;
 
   //  LOG_DEBUG("\n\n P R E   -   P R O C E S S\n");
@@ -760,6 +761,11 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 
       read = (cal->strand==0)?read1:read2;
       genome = (cal->strand==0)?genome1:genome2;
+      if (cal->strand==0 && bs_id==0 || cal->strand==1 && bs_id==1) {
+	c1='C';c2='T';
+      } else {
+	c1='G';c2='A';
+      }
 
       LOG_DEBUG_F("CAL #%i of %i (strand %i), sr_list size = %i, sr_duplicate_list size = %i\n", 
       		  j, num_cals, cal->strand, cal->sr_list->size, cal->sr_duplicate_list->size);
@@ -768,7 +774,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
       itr = linked_list_iterator_new(cal->sr_list);
       s = (seed_region_t *) linked_list_iterator_curr(itr);
 
-      LOG_DEBUG("BEGIN WHILE");
+      //LOG_DEBUG("BEGIN WHILE");
 
       while (s != NULL) {
 	/*
@@ -870,7 +876,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	  }
 
 
-	  LOG_DEBUG("BEGIN IF3\n");
+	  //LOG_DEBUG("BEGIN IF3\n");
 
 	  if (!cigar_code) {
 	    // we have to try to fill this gap and get a cigar
@@ -915,7 +921,13 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 
 	      for (int k = 0; k < gap_read_len; k++) {
 		if (query[k] != ref[k]) {
-		  distance++;
+		  if (!(//query[k] == 'T' && ref[k] == 'C' ||
+			//query[k] == 'A' && ref[k] == 'G'
+			//query[k] == 'C' && ref[k] == 'T' || 
+			//query[k] == 'G' && ref[k] == 'A'
+			query[k] == c2 && ref[k] == c1
+			))
+		    distance++;
 		  if (first == -1) first = k;
 		  last = k;
 		}
@@ -1002,7 +1014,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	  }
 	  
 
-	  LOG_DEBUG("BEGIN INSERT\n");
+	  //LOG_DEBUG("BEGIN INSERT\n");
 
 	  // insert gap in the list
 	  new_s = seed_region_new(gap_read_start, gap_read_end, gap_genome_start, gap_genome_end, 0);
@@ -1016,7 +1028,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	  }
 	}
 
-	LOG_DEBUG("END IF\n");
+	//LOG_DEBUG("END IF\n");
 
 	// continue loop...
 	prev_s = s;
@@ -1024,7 +1036,7 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	s = linked_list_iterator_curr(itr);
       }
 
-      LOG_DEBUG("END WHILE\n");
+      //LOG_DEBUG("END WHILE\n");
 
       // check for a gap at the last position
       sw_prepare = NULL;
@@ -1087,7 +1099,13 @@ void fill_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	  distance = 0;
 	  for (int k = 0; k < gap_read_len; k++) {
 	    if (query[k] != ref[k]) {
-	      distance++;
+	      if (!(//query[k] == 'T' && ref[k] == 'C' ||
+		    //query[k] == 'A' && ref[k] == 'G'
+		    //query[k] == 'C' && ref[k] == 'T' || 
+		    //query[k] == 'G' && ref[k] == 'A'
+		    query[k] == c2 && ref[k] == c1
+		    ))
+		distance++;
 	      if (first == -1) first = k;
 	      last = k;
 	    }
@@ -1355,6 +1373,7 @@ void fill_end_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 
   float Ncg;
   float margen = mapping_batch->margin;
+  char c1, c2;
 
   // initialize query and reference sequences to Smith-Waterman
   for (size_t i = 0; i < num_targets; i++) {
@@ -1383,7 +1402,12 @@ void fill_end_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
       
       read = (cal->strand==0)?read1:read2;
       genome = (cal->strand==0)?genome1:genome2;
-      
+      if (cal->strand==0 && bs_id==0 || cal->strand==1 && bs_id==1) {
+	c1='C';c2='T';
+      } else {
+	c1='G';c2='A';
+      }
+
       sw_prepare = NULL;
       s = (seed_region_t *) linked_list_get_first(cal->sr_list);
       cigar_code = (cigar_code_t *) s->info;
@@ -1447,7 +1471,13 @@ void fill_end_gaps_bs(mapping_batch_t *mapping_batch, sw_optarg_t *sw_optarg,
 	distance = 0;
 	for (int k = 0, k1 = gap_read_start; k < gap_read_len; k++, k1++) {
 	  if (seq[k1] != ref[k]) {
-	    distance++;
+	    if (!(//seq[k1] == 'T' && ref[k] == 'C' ||
+		  //seq[k1] == 'A' && ref[k] == 'G'
+		  //seq[k1] == 'C' && ref[k] == 'T' ||
+		  //seq[k1] == 'G' && ref[k] == 'A'
+		  seq[k1] == c2 && ref[k] == c1
+		  ))
+	      distance++;
 	    if (first == -1) first = k;
 	    last = k;
 	  }
