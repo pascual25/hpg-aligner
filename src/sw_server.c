@@ -384,18 +384,18 @@ void fill_matrix(subst_matrix_t subst_matrix, float match, float mismatch, int t
   subst_matrix['T']['N'] = mismatch;
   subst_matrix['G']['N'] = mismatch;
   subst_matrix['N']['N'] = match;
-  /*
+
   float x = 500;
   float y = -400;
   float z = 2.5;
   float w = -2;
-  */
 
+  /*
   float x = 5;
   float y = -4;
   float z = 5;
   float w = -4;
-
+  */
   if (type == 1) {
     subst_matrix['C']['A'] = y;
     subst_matrix['C']['C'] = x;
